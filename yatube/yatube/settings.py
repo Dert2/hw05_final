@@ -152,3 +152,5 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+POSTS_PAGINATOR_COUNT = 10
