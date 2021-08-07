@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django import forms
 
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow
 
 User = get_user_model()
 
@@ -33,8 +33,12 @@ class PostsPagesTests(TestCase):
             content_type='image/gif'
         )
         cls.user = User.objects.create_user(username='dert123')
+        cls.user1 = User.objects.create_user(username='dert1234')
+        cls.not_authorized_client = Client()
         cls.authorized_client = Client()
+        cls.authorized_client1 = Client()
         cls.authorized_client.force_login(cls.user)
+        cls.authorized_client1.force_login(cls.user1)
         cls.group = Group.objects.create(
             title='Заголовок',
             description='Текст',
@@ -232,6 +236,77 @@ class PostsPagesTests(TestCase):
         response_3 = self.authorized_client.get(reverse('index'))
         page_post_3 = response_3.context['page'][0]
         self.assertNotEqual(page_post_1, page_post_3)
+
+    def test_authorized_user_can_follow(self):
+        self.authorized_client.get(reverse(
+            'profile_follow',
+            kwargs={
+                'username': self.user1.username
+            }
+        ))
+
+        self.assertTrue(Follow.objects.filter(
+            user=self.user,
+            author=self.user1
+        ).exists())
+
+    def test_authorized_user_can_follow(self):
+        self.authorized_client.get(reverse(
+            'profile_follow',
+            kwargs={
+                'username': self.user1.username
+            }
+        ))
+        self.assertTrue(Follow.objects.filter(
+            user=self.user,
+            author=self.user1
+        ).exists())
+        self.authorized_client.get(reverse(
+            'profile_unfollow',
+            kwargs={
+                'username': self.user1.username
+            }
+        ))
+
+        self.assertFalse(Follow.objects.filter(
+            user=self.user,
+            author=self.user1
+        ).exists())
+
+    def test_new_post_show_for_followers_on_index_follow(self):
+        self.authorized_client.get(reverse(
+            'profile_follow',
+            kwargs={
+                'username': self.user1.username
+            }
+        ))
+        form_data = {
+            'text': 'Follow text',
+            'group': self.group.id,
+        }
+        self.authorized_client1.post(
+            reverse('new_post'),
+            data=form_data,
+            follow=True
+        )
+        response = self.authorized_client.get(reverse('follow_index'))
+        object1 = response.context['page'][0]
+        post_text = object1.text
+        self.assertEqual(post_text, 'Follow text')
+
+    def test_new_post_dont_show_for_not_followers_on_index_follow(self):
+        form_data = {
+            'text': 'Follow text',
+            'group': self.group.id,
+        }
+        self.authorized_client1.post(
+            reverse('new_post'),
+            data=form_data,
+            follow=True
+        )
+        response = self.authorized_client.get(reverse('follow_index'))
+        object1 = response.context['page']
+        self.assertEqual(len(object1), 0)
 
 
 class PaginatorViewsTest(TestCase):
