@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load user_filters %}
+{% block content %}
+{% if is_edit %}
+    <p>Изменение  записи:</p>
+    <form method='post' enctype="multipart/form-data">
+  	{% csrf_token %}
+  	{% for field in form %}
+        <p>
+          <label for="{{ field.id_for_label }}" class="col-md-4 col-form-label text-md-right">
+            {{ field.label }}
+            {% if field.field.required %}
+                <span class="required">
+                    *
+                </span>
+            {% endif %}
+          </label></p>
+        <p>
+          <div class="col-md-6">
+        {% if field.help_text %}
+          <small id="{{ field.id_for_label }}-help" class="form-text text-muted">
+          {{ field.help_text|safe }}
+          </small>
+        {% endif %}
+        {{ field|addclass:"form-control" }}
+        </div>
+    </p>
+    {% endfor %}
+    <button name='submit'>Изменить запись</button>
+    </form>
+  {% else %}
+    <p>Добавить новую запись:</p>
+    <form action = "{% url 'new_post' %}" method='post' enctype="multipart/form-data">
+  	{% csrf_token %}
+  	{% for field in form %}
+        <p>
+          <label for="{{ field.id_for_label }}" class="col-md-4 col-form-label text-md-right">
+            {{ field.label }}
+          {% if field.field.required %}
+              <span class="required">
+                *
+              </span>
+          {% endif %}
+          </label>
+        </p>
+        <p>
+          <div class="col-md-6">
+            {% if field.help_text %}
+                <small id="{{ field.id_for_label }}-help" class="form-text text-muted">
+                {{ field.help_text|safe }}
+                </small>
+            {% endif %}
+            {{ field|addclass:"form-control" }}
+          </div>
+        </p>
+    {% endfor %}
+      <button name='submit'>Добавить запись</button>
+      </form>
+  {% endif %}
+{% endblock content %}
